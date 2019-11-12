@@ -1,2 +1,2 @@
 # Homologous
-Homologous Cycles and Parameters
+Homologous Cycles and Parameterized Complexity
