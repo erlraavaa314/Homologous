@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Nov 11 18:16:33 2019
+
+@author: erlend
+"""
+import gudhi as gd
+import networkx as nx
+import matplotlib.pyplot as plt
+
+def todual(simp : gd.SimplexTree):
+    
+    simplices = simp.get_filtration()
+    dim = simp.dimension()
+    dual = gd.SimplexTree()
+    #dual.insert([0]) # The infinity vertex
+    #fromdual = {tuple([0]): [-1]}
+    #todual = {tuple([-1]): [0]}
+    fromdual = {}
+    todual = {}
+
+    i = 1
+    for (simplex, filtration) in simplices:
+        if len(simplex) == dim+1:
+            dual.insert([i],filtration)
+            fromdual[(i)]= simplex
+            #print(fromdual[(i)])
+            todual[tuple(simplex)]=[i]
+            #print( todual[tuple(simplex)])
+            i += 1
+    
+    for i in fromdual:
+        print(str([i]) + " maps to " + str(fromdual[i]))
+    
+    for i in todual:
+        print(str(list(i)) + " maps to " + str(todual[i]))
+
+    edgeCapacity={}
+
+    for (simplex, filtration) in simplices:
+        #print(simplex)
+        
+        if len(simplex) == dim: # a simplex of dimension d has size d+1 so a simplex of dimension d-1 has size d
+            theCapacity = 1.0   # sets the capacity to 1
+            #print(simplex)
+            cofaces = simp.get_cofaces(simplex,1)
+            #print(cofaces)
+            if len(cofaces) == 2:  # Number of cofaces of a simplex should be 2 if there is to be an edge in the dual graph
+                (a,filt1) = cofaces[0]
+                (b,filt2) = cofaces[1]
+                dualEdge = todual[tuple(a)] + todual[tuple(b)]
+                #print(dualEdge)
+                dualEdge.sort()
+                edgeCapacity[tuple(dualEdge)] = theCapacity
+                #print(edgeCapacity)
+                dual.insert(tuple(dualEdge))
+    return (dual, edgeCapacity)
+#
+#    for (simplex, filtration) in simplices:
+#        #print(simplex)
+#        edgeCapacity={}
+#        
+#        if len(simplex) == dim:
+#            theCapacity = 1.0
+#            #print(simplex)
+#            cofaces = simp.get_cofaces(simplex,1)
+#            #print(cofaces)
+#            for x in range(0, len(cofaces)):
+#                for y in range(0,len(cofaces)):
+#                    #print("hei")
+#                    (a,filt1) = cofaces[x]
+#                    (b,filt2) = cofaces[y]
+#                    c = list(set(a) & set(b))
+#                    if len(c)== dim+1:
+#                        print(a)
+#                        print(b)
+#                        print(c)
+#                        dualEdge = todual[tuple(a)] + todual[tuple(b)]
+#                        print(dualEdge)
+#                        edgeCapacity[tuple(dualEdge)] = theCapacity
+#                        dualEdge.sort(list(dualEdge))
+#                        dual.insert(dualEdge[0],dualEdge[1], capacity = theCapacity)
+#    return dual, edgeCapacity
+
+
+def tograph(simp : gd.simplex_tree , edgeCapacity : dict):
+    graph = nx.Graph()
+    simplices = simp.get_filtration()
+    
+    for (simplex, filtration) in simplices:
+        if len(simplex) == 2:
+            #print("hei")
+            #print(simplex)
+            graph.add_nodes_from(simplex)
+            graph.add_edge(simplex[0],simplex[1], capacity = edgeCapacity[tuple(simplex)])
+            
+    return graph
+
+def tograph2(simp : gd.simplex_tree):
+    graph = nx.Graph()
+    simplices = simp.get_filtration()
+    
+    for (simplex, filtration) in simplices:
+        if len(simplex) == 2:
+            #print("hei")
+            #print(simplex)
+            graph.add_nodes_from(simplex)
+            graph.add_edge(simplex[0],simplex[1])
+            
+    return graph
+
+
+def todualgraph(simp : gd.simplex_tree):
+    a, b = todual(simp)
+    return tograph(a, b)
+
+
+
+
+    
+def main():
+    simp = gd.SimplexTree()
+    simp.insert([1,2,3])
+    simp.insert([2,3,4])
+    simp.insert([3,4,5])
+    simp.insert([4,5,6])
+    simp.insert([5,6,1])
+    simp.insert([6,1,2])
+
+
+    
+    #for skeleton in simp.get_skeleton(2):
+    #    print(skeleton)
+    graph = tograph2(simp)
+    plt.subplot(121)
+    nx.draw(graph, with_labels=True, font_weight='bold')
+    plt.subplot(122)
+    nx.draw_shell(graph, nlist=[range(5, 10), range(5)], with_labels=True, font_weight='bold')
+    plt.show()
+    
+    graph = todualgraph(simp)
+    #graph.add_nodes_from([1,2,3,4])
+    #graph = nx.petersen_graph()
+    plt.subplot(121)
+    nx.draw(graph, with_labels=True, font_weight='bold')
+    plt.subplot(122)
+    nx.draw_shell(graph, nlist=[range(5, 10), range(5)], with_labels=True, font_weight='bold')
+    plt.show()
+    
+    print(nx.minimum_cut(graph, 1, 6, capacity='capacity'))
+    
+if __name__=="__main__":
+    main()
+
+print("hi")
